@@ -43,13 +43,13 @@ public:
 
     PairingHeapNode* Meld(PairingHeapNode* a, PairingHeapNode* b);
 
-    PairingHeapNode* MergePairs(PairingHeapNode* first);
+    PairingHeapNode* MergePairs();
 
-    void LinkChild(PairingHeapNode* parent, PairingHeapNode* child);
+    void LinkChild();
 
-    void CutFromParent(PairingHeapNode* node);
+    void CutFromParent();
 
-    void DecreaseKey(PairingHeapNode* node, int newKey);
+    void DecreaseKey();
 };
 
 PairingHeapNode* PairingHeap::Insert(int key, int vertexId){
@@ -59,15 +59,41 @@ PairingHeapNode* PairingHeap::Insert(int key, int vertexId){
     return newNode;
 }
 
-PairingHeapNode* FindMin(){
-
+PairingHeapNode* PairingHeap::FindMin()
+{
+    if (root == nullptr)
+    {
+        throw std::runtime_error("FindMin on empty heap");
+    }
+    return root;
 }
 
-PairingHeapNode* DeleteMin(){
+PairingHeapNode* PairingHeap::DeleteMin(){
+    if(root == nullptr)
+    {
+        throw std::runtime_error("DeleteMin on empty heap");
+    }
 
+    PairingHeapNode* oldRoot = root;
+    PairingHeapNode* childList = root->firstChild;
+
+    oldRoot->parent = nullptr;
+    oldRoot->firstChild = nullptr;
+    oldRoot->nextSibling = nullptr;
+    oldRoot->prevSibling = nullptr;
+
+    root = MergePairs();
+    nodeCount--;
+
+    if (root != nullptr)
+    {
+        root->parent = nullptr;
+    }
+
+    return oldRoot;
 }
 
-void DecreaseKey(PairingHeapNode* node, int newKey){
+void PairingHeap::DecreaseKey(){
 
 }
 
@@ -77,18 +103,18 @@ HELPERS
 
 ---------------------------*/
 
-PairingHeapNode* Meld(PairingHeapNode* a, PairingHeapNode* b){
+PairingHeapNode* PairingHeap::Meld(PairingHeapNode* a, PairingHeapNode* b){
 
 }
 
-void LinkChild(){
+void PairingHeap::LinkChild(){
 
 }
 
-void CutFromParent(){
+void PairingHeap::CutFromParent(){
 
 }
 
-PairingHeapNode* MergePairs(){
+PairingHeapNode* PairingHeap::MergePairs(){
 
 }
