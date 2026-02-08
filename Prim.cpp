@@ -83,8 +83,10 @@ PrimUsingPairingHeap(const Graph& graph, int startVertex)
     return PrimImplementation<PairingHeap, PairingHeapNode>(graph, startVertex);
 }
 
+/*
 static std::pair<std::vector<int>, int>
 PrimUsingFibonacciHeap(const Graph& graph, int startVertex)
 {
     return PrimImplementation<FibonacciHeap, FibonacciHeapNode>(graph, startVertex);
 }
+*/

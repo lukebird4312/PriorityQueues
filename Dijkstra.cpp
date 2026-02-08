@@ -85,8 +85,10 @@ DijkstraUsingPairingHeap(const Graph& graph, int sourceVertex)
     return DijkstraImplementation<PairingHeap, PairingHeapNode>(graph, sourceVertex);
 }
 
+/*
 static std::pair<std::vector<int>, std::vector<int>>
 DijkstraUsingFibonacciHeap(const Graph& graph, int sourceVertex)
 {
     return DijkstraImplementation<FibonacciHeap, FibonacciHeapNode>(graph, sourceVertex);
 }
+*/
