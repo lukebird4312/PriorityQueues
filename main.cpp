@@ -45,10 +45,10 @@ int main()
     int numberOfTrials = 5;
 
     std::vector<long long> dijkstraPairingTimes;
-    //std::vector<long long> dijkstraFibonacciTimes;
+    std::vector<long long> dijkstraFibonacciTimes;
 
     std::vector<long long> primPairingTimes;
-    //std::vector<long long> primFibonacciTimes;
+    std::vector<long long> primFibonacciTimes;
 
     for (int trialIndex = 0; trialIndex < numberOfTrials; trialIndex++)
     {
@@ -58,13 +58,11 @@ int main()
         });
         dijkstraPairingTimes.push_back(dijkstraPairingTime);
 
-        /*
         long long dijkstraFibonacciTime = TimeMicroseconds([&]()
         {
             DijkstraUsingFibonacciHeap(graph, 0);
         });
         dijkstraFibonacciTimes.push_back(dijkstraFibonacciTime);
-        */
 
         long long primPairingTime = TimeMicroseconds([&]()
         {
@@ -72,20 +70,18 @@ int main()
         });
         primPairingTimes.push_back(primPairingTime);
 
-        /*
         long long primFibonacciTime = TimeMicroseconds([&]()
         {
             PrimUsingFibonacciHeap(graph, 0);
         });
         primFibonacciTimes.push_back(primFibonacciTime);
-        */
     }
 
     std::cout << "Trials: " << numberOfTrials << "\n";
     std::cout << "Dijkstra (PairingHeap) avg us:   " << AverageMicroseconds(dijkstraPairingTimes) << "\n";
-    //std::cout << "Dijkstra (FibonacciHeap*) avg us:" << AverageMicroseconds(dijkstraFibonacciTimes) << "\n";
+    std::cout << "Dijkstra (FibonacciHeap*) avg us:" << AverageMicroseconds(dijkstraFibonacciTimes) << "\n";
     std::cout << "Prim     (PairingHeap) avg us:   " << AverageMicroseconds(primPairingTimes) << "\n";
-    //std::cout << "Prim     (FibonacciHeap*) avg us:" << AverageMicroseconds(primFibonacciTimes) << "\n";
+    std::cout << "Prim     (FibonacciHeap*) avg us:" << AverageMicroseconds(primFibonacciTimes) << "\n";
 
     return 0;
 }
