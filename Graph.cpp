@@ -3,68 +3,133 @@
 
 struct Edge
 {
-    int destinationVertex;
-    int edgeWeight;
+    int to;
+    int weight;
 
-    Edge(int destinationVertex, int edgeWeight)
-    {
-        this->destinationVertex = destinationVertex;
-        this->edgeWeight = edgeWeight;
-    }
+    Edge(int to, int weight) : to(to), weight(weight) {}
 };
 
 class Graph
 {
 public:
-    std::vector<std::vector<Edge>> adjacencyList;
+    std::vector<std::vector<Edge>> adj;
 
-    explicit Graph(int numberOfVertices)
+    explicit Graph(int n)
     {
-        adjacencyList.resize(numberOfVertices);
+        adj.resize(n);
     }
 
-    int VertexCount() const
+    int Count() const
     {
-        return static_cast<int>(adjacencyList.size());
+        return static_cast<int>(adj.size());
     }
 
-    void AddDirectedEdge(int fromVertex, int toVertex, int edgeWeight)
+    int UndirectedEdgeCount() const
     {
-        adjacencyList[fromVertex].push_back(Edge(toVertex, edgeWeight));
-    }
-
-    void AddUndirectedEdge(int vertexA, int vertexB, int edgeWeight)
-    {
-        AddDirectedEdge(vertexA, vertexB, edgeWeight);
-        AddDirectedEdge(vertexB, vertexA, edgeWeight);
-    }
-
-    static Graph MakeRandomUndirectedGraph(
-        int numberOfVertices,
-        int numberOfEdges,
-        int maxEdgeWeight,
-        int randomSeed)
-    {
-        Graph graph(numberOfVertices);
-
-        std::mt19937 randomGenerator(randomSeed);
-        std::uniform_int_distribution<int> vertexPicker(0, numberOfVertices - 1);
-        std::uniform_int_distribution<int> weightPicker(1, maxEdgeWeight);
-
-        for (int edgeIndex = 0; edgeIndex < numberOfEdges; edgeIndex++)
+        long long total = 0;
+        for (int u = 0; u < Count(); u++)
         {
-            int vertexU = vertexPicker(randomGenerator);
-            int vertexV = vertexPicker(randomGenerator);
+            total += (long long)adj[u].size();
+        }
+        return (int)(total / 2);
+    }
 
-            if (vertexU == vertexV)
+    void AddEdge(int u, int v, int weight)
+    {
+        adj[u].push_back(Edge(v, weight));
+    }
+
+    void AddUndirectedEdge(int u, int v, int weight)
+    {
+        AddEdge(u, v, weight);
+        AddEdge(v, u, weight);
+    }
+
+    static Graph MakeRandomUndirectedGraph(int n, int m, int maxW, int seed)
+    {
+        Graph g(n);
+
+        std::mt19937 rng(seed);
+        std::uniform_int_distribution<int> nodeDist(0, n - 1);
+        std::uniform_int_distribution<int> wDist(1, maxW);
+
+        for (int i = 0; i < m; i++)
+        {
+            int u = nodeDist(rng);
+            int v = nodeDist(rng);
+
+            if (u == v)
             {
                 continue;
             }
 
-            int weight = weightPicker(randomGenerator);
-            graph.AddUndirectedEdge(vertexU, vertexV, weight);
+            int w = wDist(rng);
+            g.AddUndirectedEdge(u, v, w);
         }
 
-        return graph;
+        return g;
+    }
+
+    static Graph MakeGridUndirectedGraph(int rows, int cols, int maxW, int seed)
+    {
+        int n = rows * cols;
+        Graph g(n);
+
+        std::mt19937 rng(seed);
+        std::uniform_int_distribution<int> wDist(1, maxW);
+
+        for (int r = 0; r < rows; r++)
+        {
+            for (int c = 0; c < cols; c++)
+            {
+                int u = r * cols + c;
+
+                if (c + 1 < cols)
+                {
+                    int v = u + 1;
+                    int w = wDist(rng);
+                    g.AddUndirectedEdge(u, v, w);
+                }
+
+                if (r + 1 < rows)
+                {
+                    int v = u + cols;
+                    int w = wDist(rng);
+                    g.AddUndirectedEdge(u, v, w);
+                }
+            }
+        }
+
+        return g;
+    }
+
+    static Graph MakeSyntheticWorstCaseGraph(int n, int k, int baseW)
+    {
+        Graph g(n);
+
+        for (int i = 0; i < n - 1; i++)
+        {
+            g.AddUndirectedEdge(i, i + 1, 1);
+        }
+
+        for (int i = 0; i < k; i++)
+        {
+            int w = baseW - i;
+            if (w < 1)
+            {
+                w = 1;
+            }
+
+            for (int v = k; v < n; v++)
+            {
+                if (v == i)
+                {
+                    continue;
+                }
+                g.AddUndirectedEdge(i, v, w);
+            }
+        }
+
+        return g;
     }
 };

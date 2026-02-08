@@ -14,7 +14,7 @@ PrimImplementation(const Graph& graph, int startVertex)
 {
     const int INF = std::numeric_limits<int>::max() / 4;
 
-    int numberOfVertices = graph.VertexCount();
+    int numberOfVertices = graph.Count();
 
     std::vector<int> bestEdgeWeightToReachVertex(numberOfVertices, INF);
     std::vector<int> parentVertexInMST(numberOfVertices, -1);
@@ -52,24 +52,24 @@ PrimImplementation(const Graph& graph, int startVertex)
 
         totalMSTWeight += bestEdgeWeightToReachVertex[vertexWithSmallestKey];
 
-        for (int outgoingEdgeIndex = 0; outgoingEdgeIndex < (int)graph.adjacencyList[vertexWithSmallestKey].size(); outgoingEdgeIndex++)
+        for (int outgoingEdgeIndex = 0; outgoingEdgeIndex < (int)graph.adj[vertexWithSmallestKey].size(); outgoingEdgeIndex++)
         {
-            const Edge& outgoingEdge = graph.adjacencyList[vertexWithSmallestKey][outgoingEdgeIndex];
-            int neighborVertex = outgoingEdge.destinationVertex;
+            const Edge& outgoingEdge = graph.adj[vertexWithSmallestKey][outgoingEdgeIndex];
+            int neighborVertex = outgoingEdge.to;
 
             if (vertexIsAlreadyInMST[neighborVertex])
             {
                 continue;
             }
 
-            int edgeWeight = outgoingEdge.edgeWeight;
+            int weight = outgoingEdge.weight;
 
-            if (edgeWeight < bestEdgeWeightToReachVertex[neighborVertex])
+            if (weight < bestEdgeWeightToReachVertex[neighborVertex])
             {
-                bestEdgeWeightToReachVertex[neighborVertex] = edgeWeight;
+                bestEdgeWeightToReachVertex[neighborVertex] = weight;
                 parentVertexInMST[neighborVertex] = vertexWithSmallestKey;
 
-                priorityQueue.DecreaseKey(heapNodeHandleForVertex[neighborVertex], edgeWeight);
+                priorityQueue.DecreaseKey(heapNodeHandleForVertex[neighborVertex], weight);
             }
         }
     }

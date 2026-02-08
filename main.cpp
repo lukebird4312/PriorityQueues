@@ -1,8 +1,8 @@
-#include <iostream>
-#include <vector>
+#include <fstream>
+#include <string>
 #include <chrono>
 
-#define UNITY_BUILD 1 // This is a simple way to include all .cpp files in one compilation unit, which can speed up compile times for small projects. Only necessary to include in Prim.cpp and Dijkstra.cpp, since they both need Graph.cpp, PairingHeap.cpp, and FibonacciHeap.cpp. 
+#define UNITY_BUILD 1
 
 #include "Graph.cpp"
 #include "PairingHeap.cpp"
@@ -10,78 +10,113 @@
 #include "Dijkstra.cpp"
 #include "Prim.cpp"
 
-static long long AverageMicroseconds(const std::vector<long long>& runTimesInMicroseconds)
+static void WriteRow(std::ofstream& out,
+                     const std::string& graphType,
+                     int vertexCount,
+                     int edgeCount,
+                     const std::string& algorithmName,
+                     const std::string& heapName,
+                     int trialIndex,
+                     long long totalUs,
+                     long long insertCount,
+                     long long deleteMinCount,
+                     long long decreaseKeyCount,
+                     long long insertNs,
+                     long long deleteMinNs,
+                     long long decreaseKeyNs)
 {
-    long long sum = 0;
-    for (size_t index = 0; index < runTimesInMicroseconds.size(); index++)
-    {
-        sum += runTimesInMicroseconds[index];
-    }
-    return sum / (long long)runTimesInMicroseconds.size();
-}
-
-template <typename FunctionToTime>
-static long long TimeMicroseconds(FunctionToTime functionToRun)
-{
-    auto startTime = std::chrono::steady_clock::now();
-    functionToRun();
-    auto endTime = std::chrono::steady_clock::now();
-
-    return std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
+    out << graphType << ","
+        << vertexCount << ","
+        << edgeCount << ","
+        << algorithmName << ","
+        << heapName << ","
+        << trialIndex << ","
+        << totalUs << ","
+        << insertCount << ","
+        << deleteMinCount << ","
+        << decreaseKeyCount << ","
+        << insertNs << ","
+        << deleteMinNs << ","
+        << decreaseKeyNs << "\n";
 }
 
 int main()
 {
-    int numberOfVertices = 5000;
-    int numberOfEdges = 20000;
+    std::ofstream out("results.csv");
+    out << "graph_type,vertices,edges,algorithm,heap,trial,total_us,insert_count,deletemin_count,decreasekey_count,insert_ns,deletemin_ns,decreasekey_ns\n";
 
-    Graph graph = Graph::MakeRandomUndirectedGraph(
-        numberOfVertices,
-        numberOfEdges,
-        /*maxEdgeWeight*/ 100,
-        /*randomSeed*/ 12345
-    );
+    int trials = 5;
+    int maxWeight = 20;
 
-    int numberOfTrials = 5;
-
-    std::vector<long long> dijkstraPairingTimes;
-    std::vector<long long> dijkstraFibonacciTimes;
-
-    std::vector<long long> primPairingTimes;
-    std::vector<long long> primFibonacciTimes;
-
-    for (int trialIndex = 0; trialIndex < numberOfTrials; trialIndex++)
+    for (int sizeIndex = 0; sizeIndex < 2; sizeIndex++)
     {
-        long long dijkstraPairingTime = TimeMicroseconds([&]()
-        {
-            DijkstraUsingPairingHeap(graph, 0);
-        });
-        dijkstraPairingTimes.push_back(dijkstraPairingTime);
+        int n = (sizeIndex == 0) ? 1000 : 5000;
 
-        long long dijkstraFibonacciTime = TimeMicroseconds([&]()
-        {
-            DijkstraUsingFibonacciHeap(graph, 0);
-        });
-        dijkstraFibonacciTimes.push_back(dijkstraFibonacciTime);
+        int sparseEdges = 5 * n;
+        int denseEdges = 20 * n;
 
-        long long primPairingTime = TimeMicroseconds([&]()
+        for (int trial = 0; trial < trials; trial++)
         {
-            PrimUsingPairingHeap(graph, 0);
-        });
-        primPairingTimes.push_back(primPairingTime);
+            Graph randomSparse = Graph::MakeRandomUndirectedGraph(n, sparseEdges, maxWeight, 1000 + trial);
+            Graph randomDense = Graph::MakeRandomUndirectedGraph(n, denseEdges, maxWeight, 2000 + trial);
 
-        long long primFibonacciTime = TimeMicroseconds([&]()
-        {
-            PrimUsingFibonacciHeap(graph, 0);
-        });
-        primFibonacciTimes.push_back(primFibonacciTime);
+            int gridSide;
+            if (sizeIndex == 0)
+            {
+                gridSide = 30;
+            }
+            else
+            {
+                gridSide = 70;
+            }
+            Graph gridGraph = Graph::MakeGridUndirectedGraph(gridSide, gridSide, maxWeight, 3000 + trial);
+
+            int k = n / 4;
+            Graph worstCase = Graph::MakeSyntheticWorstCaseGraph(n, k, maxWeight);
+
+            Graph graphs[4] = {randomSparse, randomDense, gridGraph, worstCase};
+            std::string graphNames[4] = {"random_sparse", "random_dense", "grid", "synthetic_worst"};
+
+            for (int graphIndex = 0; graphIndex < 4; graphIndex++)
+            {
+                Graph& g = graphs[graphIndex];
+                int V = g.Count();
+                int E = g.UndirectedEdgeCount();
+
+                ResetPairingHeapStats();
+                auto start1 = std::chrono::steady_clock::now();
+                DijkstraUsingPairingHeap(g, 0);
+                auto end1 = std::chrono::steady_clock::now();
+                auto s1 = GetPairingHeapStats();
+                long long total1 = std::chrono::duration_cast<std::chrono::microseconds>(end1 - start1).count();
+                WriteRow(out, graphNames[graphIndex], V, E, "dijkstra", "pairing", trial, total1, s1.insertCount, s1.deleteMinCount, s1.decreaseKeyCount, s1.insertNs, s1.deleteMinNs, s1.decreaseKeyNs);
+
+                ResetFibonacciHeapStats();
+                auto start2 = std::chrono::steady_clock::now();
+                DijkstraUsingFibonacciHeap(g, 0);
+                auto end2 = std::chrono::steady_clock::now();
+                auto s2 = GetFibonacciHeapStats();
+                long long total2 = std::chrono::duration_cast<std::chrono::microseconds>(end2 - start2).count();
+                WriteRow(out, graphNames[graphIndex], V, E, "dijkstra", "fibonacci", trial, total2, s2.insertCount, s2.deleteMinCount, s2.decreaseKeyCount, s2.insertNs, s2.deleteMinNs, s2.decreaseKeyNs);
+
+                ResetPairingHeapStats();
+                auto start3 = std::chrono::steady_clock::now();
+                PrimUsingPairingHeap(g, 0);
+                auto end3 = std::chrono::steady_clock::now();
+                auto s3 = GetPairingHeapStats();
+                long long total3 = std::chrono::duration_cast<std::chrono::microseconds>(end3 - start3).count();
+                WriteRow(out, graphNames[graphIndex], V, E, "prim", "pairing", trial, total3, s3.insertCount, s3.deleteMinCount, s3.decreaseKeyCount, s3.insertNs, s3.deleteMinNs, s3.decreaseKeyNs);
+
+                ResetFibonacciHeapStats();
+                auto start4 = std::chrono::steady_clock::now();
+                PrimUsingFibonacciHeap(g, 0);
+                auto end4 = std::chrono::steady_clock::now();
+                auto s4 = GetFibonacciHeapStats();
+                long long total4 = std::chrono::duration_cast<std::chrono::microseconds>(end4 - start4).count();
+                WriteRow(out, graphNames[graphIndex], V, E, "prim", "fibonacci", trial, total4, s4.insertCount, s4.deleteMinCount, s4.decreaseKeyCount, s4.insertNs, s4.deleteMinNs, s4.decreaseKeyNs);
+            }
+        }
     }
-
-    std::cout << "Trials: " << numberOfTrials << "\n";
-    std::cout << "Dijkstra (PairingHeap) avg us:   " << AverageMicroseconds(dijkstraPairingTimes) << "\n";
-    std::cout << "Dijkstra (FibonacciHeap*) avg us:" << AverageMicroseconds(dijkstraFibonacciTimes) << "\n";
-    std::cout << "Prim     (PairingHeap) avg us:   " << AverageMicroseconds(primPairingTimes) << "\n";
-    std::cout << "Prim     (FibonacciHeap*) avg us:" << AverageMicroseconds(primFibonacciTimes) << "\n";
 
     return 0;
 }

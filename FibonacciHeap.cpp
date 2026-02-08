@@ -1,15 +1,37 @@
 #include <vector>
 #include <cmath>
 #include <stdexcept>
+#include <chrono>
 
+struct FibonacciHeapStats
+{
+    long long insertCount;
+    long long deleteMinCount;
+    long long decreaseKeyCount;
+    long long insertNs;
+    long long deleteMinNs;
+    long long decreaseKeyNs;
+};
+
+static FibonacciHeapStats fibonacciHeapStats = {0, 0, 0, 0, 0, 0};
+
+static void ResetFibonacciHeapStats()
+{
+    fibonacciHeapStats = {0, 0, 0, 0, 0, 0};
+}
+
+static FibonacciHeapStats GetFibonacciHeapStats()
+{
+    return fibonacciHeapStats;
+}
 
 class FibonacciHeapNode
 {
 public:
-    int priorityKey; // the key used for heap ordering
-    int vertexId;  // graph vertex identifier
-    int degree;  // number of children
-    bool mark; // whether this node has lost a child since it became a child itself
+    int priorityKey;
+    int vertexId;
+    int degree;
+    bool mark;
 
     FibonacciHeapNode* parent;
     FibonacciHeapNode* child;
@@ -29,7 +51,6 @@ public:
         right = this;
     }
 };
-
 
 class FibonacciHeap
 {
@@ -54,17 +75,18 @@ public:
     int Count();
 };
 
-
 FibonacciHeap::FibonacciHeap()
 {
     minNode = nullptr;
     nodeCount = 0;
 }
 
-
 FibonacciHeapNode* FibonacciHeap::Insert(int key, int vertexId)
 {
+    auto startTime = std::chrono::steady_clock::now();
+
     FibonacciHeapNode* node = new FibonacciHeapNode(key, vertexId);
+
     if (minNode == nullptr)
     {
         minNode = node;
@@ -72,6 +94,7 @@ FibonacciHeapNode* FibonacciHeap::Insert(int key, int vertexId)
     else
     {
         AddToRootList(node);
+
         if (node->priorityKey < minNode->priorityKey)
         {
             minNode = node;
@@ -79,9 +102,13 @@ FibonacciHeapNode* FibonacciHeap::Insert(int key, int vertexId)
     }
 
     nodeCount++;
+
+    auto endTime = std::chrono::steady_clock::now();
+    fibonacciHeapStats.insertCount = fibonacciHeapStats.insertCount + 1;
+    fibonacciHeapStats.insertNs = fibonacciHeapStats.insertNs + std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count();
+
     return node;
 }
-
 
 FibonacciHeapNode* FibonacciHeap::FindMin()
 {
@@ -92,9 +119,10 @@ FibonacciHeapNode* FibonacciHeap::FindMin()
     return minNode;
 }
 
-
 FibonacciHeapNode* FibonacciHeap::DeleteMin()
 {
+    auto startTime = std::chrono::steady_clock::now();
+
     if (minNode == nullptr)
     {
         throw std::runtime_error("DeleteMin on empty heap");
@@ -105,6 +133,7 @@ FibonacciHeapNode* FibonacciHeap::DeleteMin()
     if (oldMin->child != nullptr)
     {
         FibonacciHeapNode* child = oldMin->child;
+
         do
         {
             FibonacciHeapNode* next = child->right;
@@ -129,16 +158,22 @@ FibonacciHeapNode* FibonacciHeap::DeleteMin()
 
     nodeCount--;
 
-    oldMin->left = oldMin->right = oldMin;
+    oldMin->left = oldMin;
+    oldMin->right = oldMin;
     oldMin->parent = nullptr;
     oldMin->child = nullptr;
+
+    auto endTime = std::chrono::steady_clock::now();
+    fibonacciHeapStats.deleteMinCount = fibonacciHeapStats.deleteMinCount + 1;
+    fibonacciHeapStats.deleteMinNs = fibonacciHeapStats.deleteMinNs + std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count();
 
     return oldMin;
 }
 
-
 void FibonacciHeap::DecreaseKey(FibonacciHeapNode* node, int newKey)
 {
+    auto startTime = std::chrono::steady_clock::now();
+
     if (newKey >= node->priorityKey)
     {
         throw std::runtime_error("New key is not smaller than current key in DecreaseKey");
@@ -157,18 +192,16 @@ void FibonacciHeap::DecreaseKey(FibonacciHeapNode* node, int newKey)
     {
         minNode = node;
     }
-}
 
+    auto endTime = std::chrono::steady_clock::now();
+    fibonacciHeapStats.decreaseKeyCount = fibonacciHeapStats.decreaseKeyCount + 1;
+    fibonacciHeapStats.decreaseKeyNs = fibonacciHeapStats.decreaseKeyNs + std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count();
+}
 
 int FibonacciHeap::Count()
 {
     return nodeCount;
 }
-
-// =================================================
-//                   HELPERS
-// =================================================
-
 
 void FibonacciHeap::AddToRootList(FibonacciHeapNode* node)
 {
@@ -211,7 +244,7 @@ void FibonacciHeap::Link(FibonacciHeapNode* y, FibonacciHeapNode* x)
 
 void FibonacciHeap::Consolidate()
 {
-    int maxDegree = static_cast<int>(std::log2(nodeCount)) + 2;
+    int maxDegree = (int)std::log2((double)nodeCount) + 2;
     std::vector<FibonacciHeapNode*> A(maxDegree, nullptr);
 
     std::vector<FibonacciHeapNode*> roots;
@@ -224,9 +257,9 @@ void FibonacciHeap::Consolidate()
     }
     while (curr != minNode);
 
-    for (FibonacciHeapNode* w : roots)
+    for (int i = 0; i < (int)roots.size(); i++)
     {
-        FibonacciHeapNode* x = w;
+        FibonacciHeapNode* x = roots[i];
         int d = x->degree;
 
         while (A[d] != nullptr)
@@ -235,25 +268,30 @@ void FibonacciHeap::Consolidate()
 
             if (x->priorityKey > y->priorityKey)
             {
-                std::swap(x, y);
+                FibonacciHeapNode* temp = x;
+                x = y;
+                y = temp;
             }
 
             Link(y, x);
             A[d] = nullptr;
             d++;
         }
+
         A[d] = x;
     }
 
     minNode = nullptr;
 
-    for (FibonacciHeapNode* node : A)
+    for (int d = 0; d < (int)A.size(); d++)
     {
+        FibonacciHeapNode* node = A[d];
         if (node != nullptr)
         {
             if (minNode == nullptr)
             {
-                node->left = node->right = node;
+                node->left = node;
+                node->right = node;
                 minNode = node;
             }
             else

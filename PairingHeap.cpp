@@ -1,4 +1,27 @@
 #include <stdexcept>
+#include <chrono>
+
+struct PairingHeapStats
+{
+    long long insertCount;
+    long long deleteMinCount;
+    long long decreaseKeyCount;
+    long long insertNs;
+    long long deleteMinNs;
+    long long decreaseKeyNs;
+};
+
+static PairingHeapStats pairingHeapStats = {0, 0, 0, 0, 0, 0};
+
+static void ResetPairingHeapStats()
+{
+    pairingHeapStats = {0, 0, 0, 0, 0, 0};
+}
+
+static PairingHeapStats GetPairingHeapStats()
+{
+    return pairingHeapStats;
+}
 
 class PairingHeapNode
 {
@@ -10,7 +33,6 @@ public:
     PairingHeapNode* nextSibling;
     PairingHeapNode* prevSibling;
 
-    
     PairingHeapNode(int key, int v)
     {
         priorityKey = key;
@@ -28,6 +50,7 @@ class PairingHeap
 private:
     PairingHeapNode* root;
     int nodeCount;
+
 public:
     PairingHeap()
     {
@@ -36,28 +59,30 @@ public:
     }
 
     PairingHeapNode* Insert(int key, int vertexId);
-
     PairingHeapNode* FindMin();
-
     PairingHeapNode* DeleteMin();
-
-    PairingHeapNode* Meld(PairingHeapNode* a, PairingHeapNode* b);
-
-    PairingHeapNode* MergePairs(PairingHeapNode* firstSibling);
-
-    void LinkChild(PairingHeapNode* parent, PairingHeapNode* child);
-
-    void CutFromParent(PairingHeapNode* node);
-
     void DecreaseKey(PairingHeapNode* node, int newKey);
-
     int Count();
+
+private:
+    PairingHeapNode* Meld(PairingHeapNode* a, PairingHeapNode* b);
+    PairingHeapNode* MergePairs(PairingHeapNode* firstSibling);
+    void LinkChild(PairingHeapNode* parent, PairingHeapNode* child);
+    void CutFromParent(PairingHeapNode* node);
 };
 
-PairingHeapNode* PairingHeap::Insert(int key, int vertexId){
+PairingHeapNode* PairingHeap::Insert(int key, int vertexId)
+{
+    auto startTime = std::chrono::steady_clock::now();
+
     PairingHeapNode* newNode = new PairingHeapNode(key, vertexId);
     root = Meld(root, newNode);
     nodeCount++;
+
+    auto endTime = std::chrono::steady_clock::now();
+    pairingHeapStats.insertCount = pairingHeapStats.insertCount + 1;
+    pairingHeapStats.insertNs = pairingHeapStats.insertNs + std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count();
+
     return newNode;
 }
 
@@ -70,8 +95,11 @@ PairingHeapNode* PairingHeap::FindMin()
     return root;
 }
 
-PairingHeapNode* PairingHeap::DeleteMin(){
-    if(root == nullptr)
+PairingHeapNode* PairingHeap::DeleteMin()
+{
+    auto startTime = std::chrono::steady_clock::now();
+
+    if (root == nullptr)
     {
         throw std::runtime_error("DeleteMin on empty heap");
     }
@@ -92,11 +120,17 @@ PairingHeapNode* PairingHeap::DeleteMin(){
         root->parent = nullptr;
     }
 
+    auto endTime = std::chrono::steady_clock::now();
+    pairingHeapStats.deleteMinCount = pairingHeapStats.deleteMinCount + 1;
+    pairingHeapStats.deleteMinNs = pairingHeapStats.deleteMinNs + std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count();
+
     return oldRoot;
 }
 
 void PairingHeap::DecreaseKey(PairingHeapNode* node, int newKey)
 {
+    auto startTime = std::chrono::steady_clock::now();
+
     if (newKey >= node->priorityKey)
     {
         throw std::runtime_error("New key is not smaller than current key in DecreaseKey");
@@ -104,22 +138,24 @@ void PairingHeap::DecreaseKey(PairingHeapNode* node, int newKey)
 
     node->priorityKey = newKey;
 
-    if (node == root)
+    if (node != root)
     {
-        return;
+        CutFromParent(node);
+        root = Meld(root, node);
     }
 
-    CutFromParent(node);
-    root = Meld(root, node);
+    auto endTime = std::chrono::steady_clock::now();
+    pairingHeapStats.decreaseKeyCount = pairingHeapStats.decreaseKeyCount + 1;
+    pairingHeapStats.decreaseKeyNs = pairingHeapStats.decreaseKeyNs + std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count();
 }
 
-/*---------------------------
+int PairingHeap::Count()
+{
+    return nodeCount;
+}
 
-HELPERS
-
----------------------------*/
-
-PairingHeapNode* PairingHeap::Meld(PairingHeapNode* a, PairingHeapNode* b){
+PairingHeapNode* PairingHeap::Meld(PairingHeapNode* a, PairingHeapNode* b)
+{
     if (a == nullptr)
     {
         return b;
@@ -141,18 +177,22 @@ PairingHeapNode* PairingHeap::Meld(PairingHeapNode* a, PairingHeapNode* b){
     }
 }
 
-void PairingHeap::LinkChild(PairingHeapNode* parent, PairingHeapNode* child){
+void PairingHeap::LinkChild(PairingHeapNode* parent, PairingHeapNode* child)
+{
     child->parent = parent;
     child->prevSibling = nullptr;
     child->nextSibling = parent->firstChild;
+
     if (parent->firstChild != nullptr)
     {
         parent->firstChild->prevSibling = child;
     }
+
     parent->firstChild = child;
 }
 
-void PairingHeap::CutFromParent(PairingHeapNode* node){
+void PairingHeap::CutFromParent(PairingHeapNode* node)
+{
     PairingHeapNode* parent = node->parent;
     if (parent == nullptr)
     {
@@ -178,12 +218,13 @@ void PairingHeap::CutFromParent(PairingHeapNode* node){
     node->nextSibling = nullptr;
 }
 
-PairingHeapNode* PairingHeap::MergePairs(PairingHeapNode* firstSibling){
-    if(firstSibling == nullptr)
+PairingHeapNode* PairingHeap::MergePairs(PairingHeapNode* firstSibling)
+{
+    if (firstSibling == nullptr)
     {
         return nullptr;
     }
-    if(firstSibling->nextSibling == nullptr)
+    if (firstSibling->nextSibling == nullptr)
     {
         firstSibling->parent = nullptr;
         firstSibling->prevSibling = nullptr;
@@ -203,7 +244,7 @@ PairingHeapNode* PairingHeap::MergePairs(PairingHeapNode* firstSibling){
     second->prevSibling = nullptr;
     second->nextSibling = nullptr;
 
-    if(remainingSiblings != nullptr)
+    if (remainingSiblings != nullptr)
     {
         remainingSiblings->prevSibling = nullptr;
     }
@@ -212,9 +253,4 @@ PairingHeapNode* PairingHeap::MergePairs(PairingHeapNode* firstSibling){
     PairingHeapNode* mergedRest = MergePairs(remainingSiblings);
 
     return Meld(mergedPair, mergedRest);
-}
-
-int PairingHeap::Count()
-{
-    return nodeCount;
 }

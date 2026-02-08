@@ -14,7 +14,7 @@ DijkstraImplementation(const Graph& graph, int sourceVertex)
 {
     const int INF = std::numeric_limits<int>::max() / 4;
 
-    int numberOfVertices = graph.VertexCount();
+    int numberOfVertices = graph.Count();
 
     std::vector<int> shortestDistanceToVertex(numberOfVertices, INF);
     std::vector<int> previousVertexOnShortestPath(numberOfVertices, -1);
@@ -53,10 +53,10 @@ DijkstraImplementation(const Graph& graph, int sourceVertex)
             break;
         }
 
-        for (int outgoingEdgeIndex = 0; outgoingEdgeIndex < (int)graph.adjacencyList[vertexWithSmallestDistance].size(); outgoingEdgeIndex++)
+        for (int outgoingEdgeIndex = 0; outgoingEdgeIndex < (int)graph.adj[vertexWithSmallestDistance].size(); outgoingEdgeIndex++)
         {
-            const Edge& outgoingEdge = graph.adjacencyList[vertexWithSmallestDistance][outgoingEdgeIndex];
-            int neighborVertex = outgoingEdge.destinationVertex;
+            const Edge& outgoingEdge = graph.adj[vertexWithSmallestDistance][outgoingEdgeIndex];
+            int neighborVertex = outgoingEdge.to;
 
             if (vertexHasFinalDistance[neighborVertex])
             {
@@ -64,7 +64,7 @@ DijkstraImplementation(const Graph& graph, int sourceVertex)
             }
 
             int candidateDistance =
-                shortestDistanceToVertex[vertexWithSmallestDistance] + outgoingEdge.edgeWeight;
+                shortestDistanceToVertex[vertexWithSmallestDistance] + outgoingEdge.weight;
 
             if (candidateDistance < shortestDistanceToVertex[neighborVertex])
             {
