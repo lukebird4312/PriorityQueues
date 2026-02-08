@@ -50,6 +50,8 @@ public:
     void CutFromParent(PairingHeapNode* node);
 
     void DecreaseKey(PairingHeapNode* node, int newKey);
+
+    int Count();
 };
 
 PairingHeapNode* PairingHeap::Insert(int key, int vertexId){
@@ -210,4 +212,9 @@ PairingHeapNode* PairingHeap::MergePairs(PairingHeapNode* firstSibling){
     PairingHeapNode* mergedRest = MergePairs(remainingSiblings);
 
     return Meld(mergedPair, mergedRest);
+}
+
+int PairingHeap::Count()
+{
+    return nodeCount;
 }
