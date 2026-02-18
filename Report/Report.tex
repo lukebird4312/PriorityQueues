@@ -17,7 +17,7 @@ email@domain.com}
 \maketitle
 
 \begin{abstract}
-Abstract goes here.
+Priority queues are fundamental data structures that play a critical role in many graph algorithms, including Dijkstra's shortest path algorithm and Prim's minimum spanning tree algorithm. Although theoretical analysis suggests that advanced priority queues such as Fibonacci heaps provide superior performance as inputs approach infinity, their practical benefits remain debated due to implementation complexity and hidden constant factors. In this study, we implement and experimentally evaluate pairing heaps and Fibonacci heaps within the context of Dijkstra's and Prim's algorithms. We analyze their performance across varying graph sizes and structures, focusing on random, grid, and synthetic worst-case graphs. Our results highlight the trade-offs between theoretical and real-world performance, offering insights into when advanced heap structures provide empirical benefits.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -25,7 +25,15 @@ Dijkstra, Prim, pairing heap, Fibonacci heap, priority queue, experimental analy
 \end{IEEEkeywords}
 
 \section{Introduction}
-Blah Blah Blah.
+Efficient data structures are integral in improving the performance of graph algorithms. Dijkstra's shortest path algorithm and Prim's minimum spanning tree algorithm are two of the most widely used algorithms in computer science. Both algorithms utilize a priority queue to repeatedly select the minimum-priority element and update priorities through decrease-key operations. As a result, their efficiency depends strongly on the speed of these operations.
+
+Most basic implementations of these algorithms use binary heaps due to their simplicity and ease of implementation. However, research has shown that more advanced data structures, such as Fibonacci heaps, can improve performance significantly. Fibonacci heaps allow for decrease-key operations to be completed in constant amortized time, which leads to improved efficiency for Dijkstra's and Prim's algorithms. Despite this advantage, Fibonacci heaps are rarely used in real-world applications because of their comparatively higher overhead and implementation difficulty.
+
+Pairing heaps have emerged as a simpler alternative that often performs well in practice. Although their worst-case time complexity is not fully understood, pairing heaps frequently achieve competitive or superior performance compared to Fibonacci heaps. This difference is a key theme in algorithm engineering: theoretical optimality does not always translate into real-world efficiency.
+
+The goal of this project is to compare Fibonacci and pairing heaps when used in Dijkstra's and Prim's algorithms. We constructed modular implementations of Dijkstra's and Prim's algorithms so they can be interchanged. We then evaluated their performance across a range of graph sizes and structures, including sparse, dense, and worst-case scenarios. We focused on total runtime, the relative costs of extract-min and decrease-key operations, and when advanced priority queues yield meaningful benefits.
+
+This work helps us understand when advanced data structures provide real benefits and when simpler alternatives are more practical. The results highlight the importance of experimental testing in algorithm design.
 
 \section{Background}
 \subsection{Dijkstra's Algorithm}
